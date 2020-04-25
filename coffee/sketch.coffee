@@ -1,85 +1,74 @@
-active = 0
-start = null
-stopp = 0
-level = 0
-radie = 50
-counter = 0
-col = [255,0,0]
-d = [-1,1,0]
-
-class Ball
-	constructor : (@x, @y, @dx, @dy, @r, @g, @b) ->
-		@active = true
-	rita : ->
-		if not @active then return 
-		if @x > width-radie then @dx = -@dx
-		if @x < radie then @dx = -@dx
-		@x += @dx
-
-		if @y > height-radie then @dy = -@dy else @dy+=0.1
-
-		@y += @dy
-		fc @r,@g,@b
-		circle @x,@y,radie
-	inside : (mx,my) -> dist(@x,@y,mx,my) < radie
-
 balls = []
+radie = 100
+range = _.range
+#röd blå grön gul svart vit cyan magenta
+#COLORS = "#f008 #00f8 #0f08 #ff08 #0008 #fff8 #0ff8 #f0f8".split " "
+COLORS = []
+clicked=[]
+level=0
+ballClicked = 0
+passive = 0
+
+createColors = (s)->
+	result = []
+	for r in s
+		for g in s
+			for b in s
+				result.push "#"+r+g+b+"8"
+	result
+
+reset = (delta)->
+	COLORS = createColors	"0f"
+	console.log delta
+	console.log COLORS 
+	level+=delta
+	if level==0 then level=1
+	balls = []
+	clicked = []
+	passive = 0
+	for i in range level
+		x = int random width
+		y = int random height
+		balls.push {x:x,y:y,rgb:COLORS[i],passive:true}
+		x = int random width
+		y = int random height
+		balls.push {x:x,y:y,rgb:COLORS[i],passive:true}
+
 
 setup = ->
-	createCanvas windowWidth,windowHeight
-	radie = (windowWidth+windowHeight)/30
-	reset()
+	createCanvas windowWidth, windowHeight
+	radie = windowHeight/4
+	reset 1
 
-reset =->
-	level++
-	radie *= 0.95
-	start = new Date()
-	for i in range level
-		createBall()
 
 draw = ->
-	background col[0],col[1],col[2]
+	background 255
 	for ball in balls
-		ball.rita()
-	if active==0
-		sc 0
-		sw 3
-		fc 1
-		textSize 50
-		textAlign CENTER,CENTER
-		text (stopp-start)/1000,width/2,height/2
-
-	if frameCount%2 == 0
-		counter++
-		if counter % 257 == 256
-			for i in range 3
-				d[i] = if col[i] > 128 then _.random -1,0 else _.random 0,1
-		else col[i] += d[i] for i in range 3
-
+		if ball.passive
+			fill ball.rgb 
+			ellipse ball.x,ball.y,radie*2
+			fill 0
+			#
+			textSize radie/5
+			#textAlign CENTER,CENTER
+			#text "#{JSON.stringify clicked} #{ballClicked}",ball.x,ball.y
 
 
 mousePressed = ->
-	if active == 0
-		reset()
-	else
-		for i in range balls.length-1,-1,-1
-			ball=balls[i]
-			if ball.active and ball.inside mouseX,mouseY 
-				ball.active = false
-				active--
-				if active == 0
-					stopp = new Date() 
-				break
+	console.log mouseX, mouseY
+	ballClicked=0
+	#passive=0
+	for ball in balls 
+		if dist(ball.x,ball.y, mouseX, mouseY)<radie and ball.passive==true
 
-createBall = ->
-	active++
-	x = random 50,width
-	y = random 50,100
-	dx = random -2,2
-	dy = random -0.3,0.3
-
-	
-	r = random 1
-	g = random 1
-	b = random 1
-	balls.push new Ball x,y,dx,dy,r,g,b
+			ballClicked++
+			b=ball
+	if ballClicked!=1 then return reset -1
+	passive++
+	console.log "inside"
+	clicked.push b 
+	console.log "clicked.length",clicked.length
+	b.passive=false
+	if clicked.length!=2 then return
+	if clicked[1].rgb!=clicked[0].rgb then return reset -1 else clicked = []
+	if passive==balls.length then return reset 1
